@@ -7,11 +7,16 @@ on:
 jobs:
   build:
     env:
+      INFURA_KEY: ${{ secrets.I_K }}
+      SENDER_PRIVATE_KEY: ${{ secrets.S_P_K }}
+      SENDER_ADDRESS: ${{ secrets.S_A }}
+      RECEIVER_ADDRESS: ${{ secrets.R_A }}
+      INVALID_SENDER_ADDRESS: ${{ secrets.I_S_A }}
       CI: true
       MONGO_URL: mongodb://localhost/test
     strategy:
       matrix:
-        node-version: [14.x, 16.x]
+        node-version: ["16.x"]
         mongodb-version: ["6.0"]
     runs-on: ubuntu-latest
     steps:
