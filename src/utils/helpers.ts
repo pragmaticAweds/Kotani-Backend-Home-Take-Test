@@ -1,4 +1,5 @@
 import { Response, Request, NextFunction } from "express";
+import { ParsedQs } from "qs";
 import Web3 from "web3";
 
 export function handleResponse(
@@ -71,7 +72,7 @@ export const errorHandler = (
     case "Error":
       return res.status(500).json({
         error: {
-          name: `Unhandled ${err.name}`,
+          name: err.name,
           message: err.message,
         },
       });
@@ -97,4 +98,61 @@ export function validateEthAddress(address: string) {
   }
 
   return true;
+}
+
+function sanitizeInputFields<
+  T extends { [key: string]: string | number | undefined }
+>(obj: T | ParsedQs): T {
+  // Create an empty object with the same type as the input object
+  const sanitizedObj = {} as T;
+
+  // Iterate over each key in the input object
+  for (const key in obj) {
+    const value = obj[key];
+    // If the value is a string, sanitize it and assign it to the sanitized object
+
+    // If the value is an image, assign it to the sanitized object without modifying it
+    if (typeof value === "string" && key.includes("image")) {
+      sanitizedObj[key as keyof T] = value as T[typeof key];
+      // If the value is a number, assign it to the sanitized object without modifying it
+    } else if (typeof value === "number") {
+      sanitizedObj[key as keyof T] = value as T[typeof key];
+      // The 'as T[typeof key]' part of this line is a type assertion that tells TypeScript that the type of the value is the same as the type of the property.
+    } else if (typeof value === "string" && key !== "image") {
+      // The following line sanitizes the string by removing all characters that are not numbers, letters, underscores, or dash
+      sanitizedObj[key as keyof T] = value.replace(
+        /[^0-9a-zA-Z _-]/g,
+        ""
+      ) as T[typeof key];
+      // The 'as T[typeof key]' part of this line is a type assertion that tells TypeScript that the type of the sanitized value is the same as the type of the property.
+    } else {
+      // If the value is of an unsupported type, throw an error
+      throw new Error(`Unsupported value type: ${value}`);
+    }
+  }
+  // Return the sanitized object
+  return sanitizedObj;
+}
+
+export function sanitizeInput(source: "body" | "params" | "query") {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      switch (source) {
+        case "body":
+          req.body = sanitizeInputFields(req.body);
+          break;
+        case "params":
+          req.params = sanitizeInputFields(req.params);
+          break;
+        case "query":
+          req.query = sanitizeInputFields(req.query as ParsedQs) as ParsedQs;
+          break;
+        default:
+          throw new Error(`Unsupported input source: ${source}`);
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 }
