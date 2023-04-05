@@ -13,7 +13,7 @@ jobs:
       RECEIVER_ADDRESS: ${{ secrets.R_A }}
       INVALID_SENDER_ADDRESS: ${{ secrets.I_S_A }}
       CI: true
-      MONGO_URL: mongodb://localhost/test
+      MONGODB_URI: mongodb://localhost/test
     strategy:
       matrix:
         node-version: ["16.x"]
